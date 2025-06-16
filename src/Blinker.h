@@ -1,5 +1,3 @@
-#include <Arduino.h>
-
 enum BlinkerState
 {
     IDLE,       // No blinker active
@@ -10,11 +8,11 @@ enum BlinkerState
 class Blinker
 {
 private:
-    int pins[5];
-    BlinkerState state = IDLE;
-    int currentLedRow = 0;
-    unsigned long lastUpdate = 0;
-    int fadeValue = 255;
+    int m_pins[5];
+    BlinkerState m_state = IDLE;
+    int m_currentLedRow = 0;
+    unsigned long m_lastUpdate = 0;
+    int m_fadeValue = 255;
 
 public:
     Blinker(int pin1, int pin2, int pin3, int pin4, int pin5);
@@ -23,4 +21,5 @@ public:
     void stop();
     void update();
     BlinkerState getState() const;
+    int *getPins() const;
 };

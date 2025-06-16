@@ -1,19 +1,20 @@
 enum BlinkersState
 {
-    TURN_LEFT,  // Left blinker
-    TURN_RIGHT, // Right blinker
-    NONE        // No blinker active
+    BLINKERSSWITCH_NONE,      // No blinker active
+    BLINKERSSWITCH_TURN_LEFT, // Left blinker
+    BLINKERSSWITCH_TURN_RIGHT // Right blinker
+
 };
 
 enum HeadlightSwitch
 {
-    EXTINGUISHED, // Headlights extinguished
-    NORMAL,       // Headlights normal
-    FULL          // Headlights full
+    HEADLIGHTSWITCH_OFF,    // Headlights extinguished
+    HEADLIGHTSWITCH_NORMAL, // Headlights normal
+    HEADLIGHTSWITCH_FULL    // Headlights full
 };
 
-typedef enum
+enum WarningButton
 {
-    OFF,
-    ON
-} ButtonState;
+    WARNING_OFF, // Warning button not pressed
+    WARNING_ON   // Warning button pressed
+};

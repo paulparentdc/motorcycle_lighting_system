@@ -1,78 +1,84 @@
 #include "Blinker.h"
+#include <Tlc5940.h>
 #include "configuration.h"
 
 Blinker::Blinker(int pin1, int pin2, int pin3, int pin4, int pin5)
 {
-    pins[0] = pin1;
-    pins[1] = pin2;
-    pins[2] = pin3;
-    pins[3] = pin4;
-    pins[4] = pin5;
+    m_pins[0] = pin1;
+    m_pins[1] = pin2;
+    m_pins[2] = pin3;
+    m_pins[3] = pin4;
+    m_pins[4] = pin5;
 }
 
 void Blinker::initialize()
 {
     for (int i = 0; i < 5; i++)
     {
-        pinMode(pins[i], OUTPUT);
-        analogWrite(pins[i], 0); // Initialize all LEDs to off
+        pinMode(m_pins[i], OUTPUT);
+        Tlc.set(m_pins[i], 0); // Initialize all LEDs to off
     }
+    Tlc.update();
 }
 
 void Blinker::start()
 {
-    state = SEQUENCING;
-    currentLedRow = 0;
-    lastUpdate = millis();
-    fadeValue = MAX_INTENSITY;
+    m_state = SEQUENCING;
+    m_currentLedRow = 0;
+    m_lastUpdate = millis();
+    m_fadeValue = MAX_POWER;
 
     // Turn off all LEDs first
     for (int i = 0; i < 5; i++)
-        analogWrite(pins[i], 0);
+        Tlc.set(m_pins[i], 0);
+    Tlc.update();
 }
 
 void Blinker::update()
 {
     unsigned long now = millis();
-    switch (state)
+    switch (m_state)
     {
     case SEQUENCING:
-        if (now - lastUpdate >= SEQUENCING_SPEED)
+        if (now - m_lastUpdate >= SEQUENCING_SPEED)
         {
-            if (currentLedRow < 5)
+            if (m_currentLedRow < 5)
             {
-                analogWrite(pins[currentLedRow], MAX_INTENSITY);
-                currentLedRow++;
-                lastUpdate = now;
+                Tlc.set(m_pins[m_currentLedRow], MAX_POWER);
+                m_currentLedRow++;
+                m_lastUpdate = now;
+                Tlc.update();
             }
             else
             {
-                state = FADING;
-                fadeValue = MAX_INTENSITY;
-                lastUpdate = now;
+                m_state = FADING;
+                m_fadeValue = MAX_POWER;
+                m_lastUpdate = now;
             }
         }
         break;
 
     case FADING:
-        if (now - lastUpdate >= FADE_OUT_DELAY)
+        if (now - m_lastUpdate >= FADE_OUT_DELAY)
         {
-            if (fadeValue > 0)
+            if (m_fadeValue > 0)
             {
-                fadeValue -= FADE_OUT_STEP;
-                if (fadeValue < 0)
-                    fadeValue = 0;
+                m_fadeValue -= FADE_OUT_STEP;
+                if (m_fadeValue < 0)
+                    m_fadeValue = 0;
 
                 for (int i = 0; i < 5; i++)
-                    analogWrite(pins[i], fadeValue);
+                    Tlc.set(m_pins[i], m_fadeValue);
 
-                lastUpdate = now;
+                m_lastUpdate = now;
+                Tlc.update();
             }
             else
             {
                 for (int i = 0; i < 5; i++)
-                    analogWrite(pins[i], 0);
-                state = IDLE; // Reset to IDLE after fading out
+                    Tlc.set(m_pins[i], 0);
+                Tlc.update();
+                m_state = IDLE; // Reset to IDLE after fading out
             }
         }
         break;
@@ -85,12 +91,18 @@ void Blinker::update()
 
 void Blinker::stop()
 {
-    state = IDLE;
+    m_state = IDLE;
     for (int i = 0; i < 5; i++)
-        analogWrite(pins[i], 0);
+        Tlc.set(m_pins[i], 0);
+    Tlc.update();
 }
 
 BlinkerState Blinker::getState() const
 {
-    return state;
+    return m_state;
+}
+
+int *Blinker::getPins() const
+{
+    return (int *)m_pins;
 }

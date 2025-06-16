@@ -1,7 +1,11 @@
+#include "main.h"
+
 #include <Arduino.h>
-#include <main.h>
-#include "Blinker.h"
+#include <Tlc5940.h>
+
 #include "configuration.h"
+#include "Blinker.h"
+#include "Headlight.h"
 
 // Blinker objects
 Blinker frontLeft(7, 6, 5, 4, 3);
@@ -13,33 +17,75 @@ BlinkersState readBlinkersSwitch()
 {
   int val = analogRead(BLINKER_SWITCH_PIN);
   if (val < LEFT_BLINKER_THRESHOLD)
-    return TURN_LEFT;
+    return BLINKERSSWITCH_TURN_LEFT;
   else if (val < RIGHT_BLINKER_THRESHOLD)
-    return NONE;
+    return BLINKERSSWITCH_NONE;
   else
-    return TURN_RIGHT;
+    return BLINKERSSWITCH_TURN_RIGHT;
 }
 
 HeadlightSwitch readHeadlightSwitch()
 {
   int val = analogRead(HEADLIGHT_SWITCH_PIN);
   if (val < HEADLIGHT_OFF_THRESHOLD)
-    return EXTINGUISHED;
+    return HEADLIGHTSWITCH_OFF;
   else if (val < HEADLIGHT_NORMAL_THRESHOLD)
-    return NORMAL;
+    return HEADLIGHTSWITCH_NORMAL;
   else
-    return FULL;
+    return HEADLIGHTSWITCH_FULL;
 }
 
-ButtonState readWarningButton()
+WarningButton readWarningButton()
 {
   // Read the state of the warning button
   int val = digitalRead(WARNING_BUTTON_PIN);
-  return (val == HIGH) ? ON : OFF; // Assuming HIGH means pressed
+  return (val == HIGH) ? WARNING_ON : WARNING_OFF; // Assuming HIGH means pressed
+}
+
+void startupSequence()
+{
+  // Light up the LEDs one by one
+  for (int i = 0; i < STARTUP_LED_COUNT; ++i)
+  {
+    Tlc.set(BLINKER_STARTUP_SEQUENCE[i], MAX_POWER);
+    Tlc.update();
+    delay(STARTUP_SEQUENCING_SPEED);
+  }
+
+  // Keep them on for 1 second
+  delay(1000);
+
+  // Fade out over 1 second
+  for (int value = MAX_POWER; value >= 0; value -= (MAX_POWER / STARTUP_FADE_STEPS))
+  {
+    for (int i = 0; i < STARTUP_LED_COUNT; ++i)
+    {
+      Tlc.set(BLINKER_STARTUP_SEQUENCE[i], value);
+    }
+    Tlc.update();
+    delay(STARTUP_FADE_DELAY);
+  }
+
+  // Ensure everything is off at the end
+  for (int i = 0; i < STARTUP_LED_COUNT; ++i)
+  {
+    Tlc.set(BLINKER_STARTUP_SEQUENCE[i], 0);
+  }
+  Tlc.update();
 }
 
 void setup()
 {
+  // Initialize serial communication for debugging
+  Serial.begin(9600);
+
+  // Initialize the Tlc5940 library
+  Tlc.init();
+
+  // Run the startup sequence
+  // This will light up the LEDs in a sequence to indicate the system is starting
+  startupSequence();
+
   // Initialize all blinkers
   frontLeft.initialize();
   frontRight.initialize();
@@ -56,26 +102,26 @@ void setup()
 void loop()
 {
   // Read inputs
-  BlinkersState blinkersState = readBlinkersSwitch();
-  HeadlightSwitch headlightState = readHeadlightSwitch();
-  ButtonState warningButtonState = readWarningButton();
+  BlinkersState blinkersSwitch = readBlinkersSwitch();
+  HeadlightSwitch headlightsSwitch = readHeadlightSwitch();
+  WarningButton warningButton = readWarningButton();
 
   // Control blinkers based on the switch state
-  if (blinkersState == TURN_LEFT && frontLeft.getState() == IDLE && backLeft.getState() == IDLE)
+  if (blinkersSwitch == BLINKERSSWITCH_TURN_LEFT && frontLeft.getState() == IDLE && backLeft.getState() == IDLE)
   {
     frontLeft.start();
     backLeft.start();
     frontRight.stop();
     backRight.stop();
   }
-  else if (blinkersState == TURN_RIGHT && frontRight.getState() == IDLE && backRight.getState() == IDLE)
+  else if (blinkersSwitch == BLINKERSSWITCH_TURN_RIGHT && frontRight.getState() == IDLE && backRight.getState() == IDLE)
   {
     frontRight.start();
     backRight.start();
     frontLeft.stop();
     backLeft.stop();
   }
-  else if (blinkersState == NONE)
+  else if (blinkersSwitch == BLINKERSSWITCH_NONE)
   {
     frontLeft.stop();
     frontRight.stop();
