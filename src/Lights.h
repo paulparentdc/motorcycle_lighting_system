@@ -22,7 +22,7 @@ private:
     LedStrip &m_plateStrip;      // LED strip on the license plate
 
 public:
-    Lights(int powerPin, int modePin, int backLightPin, LedStrip &frontLightStrip, LedStrip &dashboardStrip, LedStrip &plateStrip);
+    Lights(int headlightPin, int highbeamPin, int backLightPin, LedStrip &frontLightStrip, LedStrip &dashboardStrip, LedStrip &plateStrip);
 
     void initialize();
     void set(LightsMode mode);

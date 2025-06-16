@@ -140,7 +140,11 @@ void loop()
     blinkersRight.stop();
   }
 
-  // Control headlights based on the switch state
+  // Update all blinkers
+  blinkersLeft.update();
+  blinkersRight.update();
+
+  // Control headlights based on the switches states
   if (lightsSwitch == LIGHTSSWITCH_OFF)
   {
     if (highBeamSwitch == HIGH_BEAM_ON)
@@ -174,8 +178,4 @@ void loop()
       lights.set(LIGHTS_CITY); // Turn on normal lights in night mode
     }
   }
-
-  // Update all blinkers
-  blinkersLeft.update();
-  blinkersRight.update();
 }
