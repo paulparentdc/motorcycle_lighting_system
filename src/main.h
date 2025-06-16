@@ -6,11 +6,17 @@ enum BlinkersState
 
 };
 
-enum HeadlightSwitch
+enum LightsSwitch
 {
-    HEADLIGHTSWITCH_OFF,    // Headlights extinguished
-    HEADLIGHTSWITCH_NORMAL, // Headlights normal
-    HEADLIGHTSWITCH_FULL    // Headlights full
+    LIGHTSSWITCH_OFF,  // Lightss extinguished
+    LIGHTSSWITCH_DAY,  // Lightss normal
+    LIGHTSSWITCH_NIGHT // Lightss full
+};
+
+enum HighBeamSwitch
+{
+    HIGH_BEAM_OFF, // High beam not active
+    HIGH_BEAM_ON   // High beam active
 };
 
 enum WarningButton

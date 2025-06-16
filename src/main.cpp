@@ -5,42 +5,63 @@
 
 #include "configuration.h"
 #include "Blinker.h"
-#include "Headlight.h"
+#include "Lights.h"
+#include "LedStrip.h"
 
 // Blinker objects
+// These objects control the left and right blinkers of the vehicle
 Blinker blinkersLeft(7, 6, 5, 4, 3, 28, 27, 26, 25, 24, 18);
 Blinker blinkersRight(12, 11, 10, 9, 8, 23, 22, 21, 20, 19, 17);
 
-// Headlight object
-Headlight headlight(2, 1, 0, 0, 0); // Pins for power, mode, and LED strip channels
+// LedStrip objects
+// These objects control the LED strips for different parts of the vehicle
+LedStrip headlightStrip(HEADLIGHT_LEDSTRIP_RED_PIN, HEADLIGHT_LEDSTRIP_GREEN_PIN, HEADLIGHT_LEDSTRIP_BLUE_PIN);
+LedStrip dashboardStrip(DASHBOARD_LEDSTRIP_RED_PIN, DASHBOARD_LEDSTRIP_GREEN_PIN, DASHBOARD_LEDSTRIP_BLUE_PIN);
+LedStrip plateStrip(PLATE_LEDSTRIP_RED_PIN, PLATE_LEDSTRIP_GREEN_PIN, PLATE_LEDSTRIP_BLUE_PIN);
+
+// Lights object
+// This object controls the power to the lights and manages the LED strips
+Lights lights(LIGHTS_POWER_PIN, HEADLIGHT_MODE_PIN, LIGHTS_BACKLIGHT_PIN,
+              headlightStrip,
+              dashboardStrip,
+              plateStrip);
 
 BlinkersState readBlinkersSwitch()
 {
   int val = analogRead(BLINKER_SWITCH_PIN);
-  if (val < LEFT_BLINKER_THRESHOLD)
-    return BLINKERSSWITCH_TURN_LEFT;
-  else if (val < RIGHT_BLINKER_THRESHOLD)
-    return BLINKERSSWITCH_NONE;
-  else
+
+  if (val < RIGHT_BLINKER_THRESHOLD)
     return BLINKERSSWITCH_TURN_RIGHT;
+  else if (val < LEFT_BLINKER_THRESHOLD)
+    return BLINKERSSWITCH_TURN_LEFT;
+  else
+    return BLINKERSSWITCH_NONE;
 }
 
-HeadlightSwitch readHeadlightSwitch()
+LightsSwitch readLightsSwitch()
 {
-  int val = analogRead(HEADLIGHT_SWITCH_PIN);
-  if (val < HEADLIGHT_OFF_THRESHOLD)
-    return HEADLIGHTSWITCH_OFF;
-  else if (val < HEADLIGHT_NORMAL_THRESHOLD)
-    return HEADLIGHTSWITCH_NORMAL;
+  int val = analogRead(LIGHTS_SWITCH_PIN);
+
+  if (val < LIGHTS_OFF_THRESHOLD)
+    return LIGHTSSWITCH_OFF;
+  else if (val < LIGHTS_NIGHT_THRESHOLD)
+    return LIGHTSSWITCH_DAY;
   else
-    return HEADLIGHTSWITCH_FULL;
+    return LIGHTSSWITCH_NIGHT;
+}
+
+HighBeamSwitch readHighBeamSwitch()
+{
+  int val = digitalRead(HIGH_BEAM_SWITCH_PIN);
+
+  return val == HIGH ? HIGH_BEAM_ON : HIGH_BEAM_OFF;
 }
 
 WarningButton readWarningButton()
 {
-  // Read the state of the warning button
   int val = digitalRead(WARNING_BUTTON_PIN);
-  return (val == HIGH) ? WARNING_ON : WARNING_OFF; // Assuming HIGH means pressed
+
+  return (val == HIGH) ? WARNING_ON : WARNING_OFF;
 }
 
 void startupSequence()
@@ -85,24 +106,21 @@ void setup()
 
   // Run the startup sequence
   // This will light up the LEDs in a sequence to indicate the system is starting
+  // In the end, all LEDs will be turned off
   startupSequence();
 
-  // Initialize all blinkers
+  // Initialize everything
   blinkersLeft.initialize();
   blinkersRight.initialize();
-
-  // Set pin modes for the blinker control switch
-  pinMode(BLINKER_SWITCH_PIN, INPUT);
-
-  // Set pin modes for the headlight switch
-  pinMode(HEADLIGHT_SWITCH_PIN, INPUT);
+  lights.initialize();
 }
 
 void loop()
 {
   // Read inputs
   BlinkersState blinkersSwitch = readBlinkersSwitch();
-  HeadlightSwitch headlightsSwitch = readHeadlightSwitch();
+  LightsSwitch lightsSwitch = readLightsSwitch();
+  HighBeamSwitch highBeamSwitch = readHighBeamSwitch();
   WarningButton warningButton = readWarningButton();
 
   // Control blinkers based on the switch state
@@ -123,6 +141,39 @@ void loop()
   }
 
   // Control headlights based on the switch state
+  if (lightsSwitch == LIGHTSSWITCH_OFF)
+  {
+    if (highBeamSwitch == HIGH_BEAM_ON)
+    {
+      lights.set(LIGHTS_OFF_FLASH); // Turn on only high beam
+    }
+    else
+    {
+      lights.set(LIGHTS_OFF); // Turn off all lights
+    }
+  }
+  else if (lightsSwitch == LIGHTSSWITCH_DAY)
+  {
+    if (highBeamSwitch == HIGH_BEAM_ON)
+    {
+      lights.set(LIGHTS_DAY_FLASH); // Turn on high beam in day mode
+    }
+    else
+    {
+      lights.set(LIGHTS_DAY); // Turn on normal lights in day mode
+    }
+  }
+  else if (lightsSwitch == LIGHTSSWITCH_NIGHT)
+  {
+    if (highBeamSwitch == HIGH_BEAM_ON)
+    {
+      lights.set(LIGHTS_COUNTRY); // Turn on high beam in night mode
+    }
+    else
+    {
+      lights.set(LIGHTS_CITY); // Turn on normal lights in night mode
+    }
+  }
 
   // Update all blinkers
   blinkersLeft.update();

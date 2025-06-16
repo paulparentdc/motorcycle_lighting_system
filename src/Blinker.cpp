@@ -44,6 +44,10 @@ void Blinker::start()
         Tlc.set(m_backPins[i], 0);
     }
 
+    // Turn on the dashboard LED
+    // This indicates that the blinker is active
+    Tlc.set(m_dashboardPin, MAX_POWER);
+
     Tlc.update();
 }
 
@@ -65,6 +69,11 @@ void Blinker::update()
             }
             else
             {
+                // Turn off the dashjboard LED
+                Tlc.set(m_dashboardPin, 0);
+                Tlc.update();
+
+                // Start fading out the LEDs
                 m_state = FADING;
                 m_fadeValue = MAX_POWER;
                 m_lastUpdate = now;
@@ -97,8 +106,17 @@ void Blinker::update()
                     Tlc.set(m_frontPins[i], 0);
                     Tlc.set(m_backPins[i], 0);
                 }
+
+                // Turn on the dashboard LED
+                Tlc.set(m_dashboardPin, MAX_POWER);
+
                 Tlc.update();
-                m_state = IDLE; // Reset to IDLE after fading out
+
+                // Reset the state to SEQUENCING to restart the sequence
+                m_state = SEQUENCING;    // Restart the sequence
+                m_currentLedRow = 0;     // Reset the current LED row
+                m_lastUpdate = millis(); // Reset the last update time
+                m_fadeValue = MAX_POWER; // Reset the fade value
             }
         }
         break;
@@ -117,6 +135,9 @@ void Blinker::stop()
         Tlc.set(m_frontPins[i], 0);
         Tlc.set(m_backPins[i], 0);
     }
+
+    // Turn off the dashboard LED
+    Tlc.set(m_dashboardPin, 0);
 
     Tlc.update();
 }
