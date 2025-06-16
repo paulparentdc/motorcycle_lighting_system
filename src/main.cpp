@@ -57,11 +57,17 @@ HighBeamSwitch readHighBeamSwitch()
   return val == HIGH ? HIGH_BEAM_ON : HIGH_BEAM_OFF;
 }
 
-WarningButton readWarningButton()
+// Warning button state
+// This variable keeps track of whether the warning button is currently active
+bool warningActive = false;
+int lastRawWarningButton = LOW;
+
+bool readWarningButton()
 {
   int val = digitalRead(WARNING_BUTTON_PIN);
-
-  return (val == HIGH) ? WARNING_ON : WARNING_OFF;
+  bool risingEdge = (val == HIGH && lastRawWarningButton == LOW);
+  lastRawWarningButton = val;
+  return risingEdge;
 }
 
 void startupSequence()
@@ -121,23 +127,42 @@ void loop()
   BlinkersState blinkersSwitch = readBlinkersSwitch();
   LightsSwitch lightsSwitch = readLightsSwitch();
   HighBeamSwitch highBeamSwitch = readHighBeamSwitch();
-  WarningButton warningButton = readWarningButton();
+  bool warningButtonPressed = readWarningButton();
 
-  // Control blinkers based on the switch state
-  if (blinkersSwitch == BLINKERSSWITCH_TURN_LEFT && blinkersLeft.getState() == IDLE)
+  if (warningButtonPressed)
   {
-    blinkersLeft.start();
-    blinkersRight.stop();
+    warningActive = !warningActive;
+    if (warningActive)
+    {
+      blinkersLeft.startWarning();
+      blinkersRight.startWarning();
+    }
+    else
+    {
+      blinkersLeft.stop();
+      blinkersRight.stop();
+    }
   }
-  else if (blinkersSwitch == BLINKERSSWITCH_TURN_RIGHT && blinkersRight.getState() == IDLE)
+
+  // If warning is active, blinkers are managed by warning
+  if (!warningActive)
   {
-    blinkersRight.start();
-    blinkersLeft.stop();
-  }
-  else if (blinkersSwitch == BLINKERSSWITCH_NONE)
-  {
-    blinkersLeft.stop();
-    blinkersRight.stop();
+    // If the warning is not active, control blinkers based on the switch state
+    if (blinkersSwitch == BLINKERSSWITCH_TURN_LEFT && blinkersLeft.getState() != SEQUENCING)
+    {
+      blinkersLeft.start();
+      blinkersRight.stop();
+    }
+    else if (blinkersSwitch == BLINKERSSWITCH_TURN_RIGHT && blinkersRight.getState() != SEQUENCING)
+    {
+      blinkersRight.start();
+      blinkersLeft.stop();
+    }
+    else if (blinkersSwitch == BLINKERSSWITCH_NONE)
+    {
+      blinkersLeft.stop();
+      blinkersRight.stop();
+    }
   }
 
   // Update all blinkers

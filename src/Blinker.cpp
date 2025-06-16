@@ -51,6 +51,26 @@ void Blinker::start()
     Tlc.update();
 }
 
+void Blinker::startWarning()
+{
+    m_state = WARNING;
+    m_currentLedRow = 0;
+    m_lastUpdate = millis();
+    m_fadeValue = MAX_POWER;
+
+    // Turn off all LEDs first
+    for (int i = 0; i < 5; i++)
+    {
+        Tlc.set(m_frontPins[i], 0);
+        Tlc.set(m_backPins[i], 0);
+    }
+
+    // Turn on the dashboard LED
+    Tlc.set(m_dashboardPin, MAX_POWER);
+
+    Tlc.update();
+}
+
 void Blinker::update()
 {
     unsigned long now = millis();
@@ -74,6 +94,45 @@ void Blinker::update()
                 Tlc.update();
 
                 // Start fading out the LEDs
+                m_state = FADING;
+                m_fadeValue = MAX_POWER;
+                m_lastUpdate = now;
+            }
+        }
+        break;
+
+    case WARNING:
+        if (now - m_lastUpdate >= SEQUENCING_SPEED)
+        {
+            if (m_currentLedRow == 0)
+            {
+                // Allume la rangée du milieu (2)
+                Tlc.set(m_frontPins[2], MAX_POWER);
+                Tlc.set(m_backPins[2], MAX_POWER);
+            }
+            else if (m_currentLedRow == 1)
+            {
+                // Allume les rangées 1 et 3
+                Tlc.set(m_frontPins[1], MAX_POWER);
+                Tlc.set(m_backPins[1], MAX_POWER);
+                Tlc.set(m_frontPins[3], MAX_POWER);
+                Tlc.set(m_backPins[3], MAX_POWER);
+            }
+            else if (m_currentLedRow == 2)
+            {
+                // Allume les rangées 0 et 4
+                Tlc.set(m_frontPins[0], MAX_POWER);
+                Tlc.set(m_backPins[0], MAX_POWER);
+                Tlc.set(m_frontPins[4], MAX_POWER);
+                Tlc.set(m_backPins[4], MAX_POWER);
+            }
+            m_currentLedRow++;
+            m_lastUpdate = now;
+            Tlc.update();
+
+            if (m_currentLedRow > 2)
+            {
+                // Après avoir tout allumé, passe au fading
                 m_state = FADING;
                 m_fadeValue = MAX_POWER;
                 m_lastUpdate = now;
