@@ -8,10 +8,11 @@
 #include "Headlight.h"
 
 // Blinker objects
-Blinker frontLeft(7, 6, 5, 4, 3);
-Blinker frontRight(12, 11, 10, 9, 8);
-Blinker backLeft(28, 27, 26, 25, 24);
-Blinker backRight(23, 22, 21, 20, 19);
+Blinker blinkersLeft(7, 6, 5, 4, 3, 28, 27, 26, 25, 24, 18);
+Blinker blinkersRight(12, 11, 10, 9, 8, 23, 22, 21, 20, 19, 17);
+
+// Headlight object
+Headlight headlight(2, 1, 0, 0, 0); // Pins for power, mode, and LED strip channels
 
 BlinkersState readBlinkersSwitch()
 {
@@ -47,7 +48,7 @@ void startupSequence()
   // Light up the LEDs one by one
   for (int i = 0; i < STARTUP_LED_COUNT; ++i)
   {
-    Tlc.set(BLINKER_STARTUP_SEQUENCE[i], MAX_POWER);
+    Tlc.set(BLINKERS_STARTUP_SEQUENCE[i], MAX_POWER);
     Tlc.update();
     delay(STARTUP_SEQUENCING_SPEED);
   }
@@ -60,7 +61,7 @@ void startupSequence()
   {
     for (int i = 0; i < STARTUP_LED_COUNT; ++i)
     {
-      Tlc.set(BLINKER_STARTUP_SEQUENCE[i], value);
+      Tlc.set(BLINKERS_STARTUP_SEQUENCE[i], value);
     }
     Tlc.update();
     delay(STARTUP_FADE_DELAY);
@@ -69,7 +70,7 @@ void startupSequence()
   // Ensure everything is off at the end
   for (int i = 0; i < STARTUP_LED_COUNT; ++i)
   {
-    Tlc.set(BLINKER_STARTUP_SEQUENCE[i], 0);
+    Tlc.set(BLINKERS_STARTUP_SEQUENCE[i], 0);
   }
   Tlc.update();
 }
@@ -87,10 +88,8 @@ void setup()
   startupSequence();
 
   // Initialize all blinkers
-  frontLeft.initialize();
-  frontRight.initialize();
-  backLeft.initialize();
-  backRight.initialize();
+  blinkersLeft.initialize();
+  blinkersRight.initialize();
 
   // Set pin modes for the blinker control switch
   pinMode(BLINKER_SWITCH_PIN, INPUT);
@@ -107,33 +106,25 @@ void loop()
   WarningButton warningButton = readWarningButton();
 
   // Control blinkers based on the switch state
-  if (blinkersSwitch == BLINKERSSWITCH_TURN_LEFT && frontLeft.getState() == IDLE && backLeft.getState() == IDLE)
+  if (blinkersSwitch == BLINKERSSWITCH_TURN_LEFT && blinkersLeft.getState() == IDLE)
   {
-    frontLeft.start();
-    backLeft.start();
-    frontRight.stop();
-    backRight.stop();
+    blinkersLeft.start();
+    blinkersRight.stop();
   }
-  else if (blinkersSwitch == BLINKERSSWITCH_TURN_RIGHT && frontRight.getState() == IDLE && backRight.getState() == IDLE)
+  else if (blinkersSwitch == BLINKERSSWITCH_TURN_RIGHT && blinkersRight.getState() == IDLE)
   {
-    frontRight.start();
-    backRight.start();
-    frontLeft.stop();
-    backLeft.stop();
+    blinkersRight.start();
+    blinkersLeft.stop();
   }
   else if (blinkersSwitch == BLINKERSSWITCH_NONE)
   {
-    frontLeft.stop();
-    frontRight.stop();
-    backLeft.stop();
-    backRight.stop();
+    blinkersLeft.stop();
+    blinkersRight.stop();
   }
 
   // Control headlights based on the switch state
 
   // Update all blinkers
-  frontLeft.update();
-  frontRight.update();
-  backLeft.update();
-  backRight.update();
+  blinkersLeft.update();
+  blinkersRight.update();
 }

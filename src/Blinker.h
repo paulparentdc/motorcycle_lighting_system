@@ -8,18 +8,21 @@ enum BlinkerState
 class Blinker
 {
 private:
-    int m_pins[5];
+    int m_dashboardPin; // Pin for dashboard indicator
+    int m_frontPins[5]; // Pins for front blinker LEDs
+    int m_backPins[5];  // Pins for back blinker LEDs
     BlinkerState m_state = IDLE;
     int m_currentLedRow = 0;
     unsigned long m_lastUpdate = 0;
     int m_fadeValue = 255;
 
 public:
-    Blinker(int pin1, int pin2, int pin3, int pin4, int pin5);
+    Blinker(int frontPin1, int frontPin2, int frontPin3, int frontPin4, int frontPin5,
+            int backPin1, int backPin2, int backPin3, int backPin4, int backPin5,
+            int dashboardPin);
     void start();
     void initialize();
     void stop();
     void update();
     BlinkerState getState() const;
-    int *getPins() const;
 };
